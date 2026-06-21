@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Image Converter</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #0f0f13;
+    color: #e8e8f0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 6px;
+    background: linear-gradient(135deg, #a78bfa, #60a5fa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  p.sub {
+    color: #6b6b80;
+    font-size: 0.9rem;
+    margin-bottom: 32px;
+  }
+
+  .card {
+    background: #18181f;
+    border: 1px solid #2a2a35;
+    border-radius: 16px;
+    padding: 32px;
+    width: 100%;
+    max-width: 480px;
+  }
+
+  /* Drop zone */
+  .drop-zone {
+    border: 2px dashed #3a3a50;
+    border-radius: 12px;
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    margin-bottom: 24px;
+    position: relative;
+  }
+  .drop-zone:hover, .drop-zone.over {
+    border-color: #a78bfa;
+    background: #1f1f2e;
+  }
+  .drop-zone input[type="file"] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .drop-icon { font-size: 2.2rem; margin-bottom: 10px; }
+  .drop-zone p { color: #6b6b80; font-size: 0.88rem; }
+  .drop-zone p strong { color: #c4b5fd; }
+
+  /* Preview */
+  #preview-wrap { display: none; margin-bottom: 20px; text-align: center; }
+  #preview-wrap img {
+    max-width: 100%; max-height: 180px;
+    border-radius: 8px;
+    border: 1px solid #2a2a35;
+  }
+  #file-name { font-size: 0.8rem; color: #6b6b80; margin-top: 8px; }
+
+  /* Format grid */
+  label.section { font-size: 0.78rem; color: #6b6b80; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 12px; }
+
+  .formats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+
+  .fmt-btn {
+    background: #22222e;
+    border: 1.5px solid #2e2e40;
+    border-radius: 8px;
+    color: #9090a8;
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 10px 4px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .fmt-btn:hover { border-color: #a78bfa; color: #c4b5fd; background: #1f1f2e; }
+  .fmt-btn.active {
+    border-color: #a78bfa;
+    background: #2d1f5e;
+    color: #e0d4ff;
+  }
+
+  /* Quality slider */
+  .quality-row { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+  .quality-row label { font-size: 0.82rem; color: #6b6b80; white-space: nowrap; }
+  .quality-row input[type="range"] {
+    flex: 1;
+    accent-color: #a78bfa;
+    cursor: pointer;
+  }
+  #quality-val { font-size: 0.82rem; color: #c4b5fd; min-width: 32px; text-align: right; }
+
+  /* Convert btn */
+  #convert-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #7c3aed, #3b82f6);
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 700;
+    padding: 14px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    letter-spacing: 0.3px;
+  }
+  #convert-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  #convert-btn:hover:not(:disabled) { opacity: 0.9; }
+
+  #status { margin-top: 16px; text-align: center; font-size: 0.85rem; color: #6b6b80; min-height: 20px; }
+  #status.ok { color: #34d399; }
+  #status.err { color: #f87171; }
+
+  canvas { display: none; }
+</style>
+</head>
+<body>
+
+<h1>Image Converter</h1>
+<p class="sub">Drop any image — convert to your format instantly</p>
+
+<div class="card">
+
+  <div class="drop-zone" id="drop-zone">
+    <input type="file" id="file-input" accept="image/*">
+    <div class="drop-icon">🖼️</div>
+    <p><strong>Click to upload</strong> or drag & drop</p>
+    <p>PNG, JPG, WEBP, BMP, GIF, SVG…</p>
+  </div>
+
+  <div id="preview-wrap">
+    <img id="preview-img" src="" alt="preview">
+    <div id="file-name"></div>
+  </div>
+
+  <label class="section">Convert to</label>
+  <div class="formats" id="formats">
+    <div class="fmt-btn active" data-fmt="jpeg">JPEG</div>
+    <div class="fmt-btn" data-fmt="png">PNG</div>
+    <div class="fmt-btn" data-fmt="webp">WEBP</div>
+    <div class="fmt-btn" data-fmt="bmp">BMP</div>
+    <div class="fmt-btn" data-fmt="gif">GIF</div>
+    <div class="fmt-btn" data-fmt="ico">ICO</div>
+    <div class="fmt-btn" data-fmt="tiff">TIFF</div>
+    <div class="fmt-btn" data-fmt="avif">AVIF</div>
+  </div>
+
+  <div class="quality-row" id="quality-row">
+    <label>Quality</label>
+    <input type="range" id="quality" min="10" max="100" value="90">
+    <span id="quality-val">90%</span>
+  </div>
+
+  <button id="convert-btn" disabled>Convert & Download</button>
+  <div id="status"></div>
+</div>
+
+<canvas id="canvas"></canvas>
+
+<script src="main.js">
+  
+</script>
+</body>
+</html>
